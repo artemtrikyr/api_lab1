@@ -2,49 +2,55 @@ using AttendanceJournalApi.Models;
 using AttendanceJournalApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AttendanceJournalApi.Controllers
+namespace AttendanceJournalApi.Controllers;
+
+[ApiController]
+[Route("api/attendance")]
+public class AttendanceController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AttendanceController : ControllerBase
+    private readonly AttendanceService _service;
+
+    public AttendanceController(AttendanceService service)
     {
-        private readonly AttendanceService _service;
+        _service = service;
+    }
 
-        public AttendanceController(AttendanceService service)
-        {
-            _service = service;
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<AttendanceRecord>>> GetAll()
+    {
+        var records = await _service.GetAll();
+        return Ok(records);
+    }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<AttendanceRecord>> GetById(int id)
+    {
+        var record = await _service.GetById(id);
+        return record != null ? Ok(record) : NotFound(new { message = "Record not found" });
+    }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
+    [HttpPost]
+    public async Task<ActionResult<AttendanceRecord>> Create([FromBody] AttendanceRecord record)
+    {
+        var newRecord = await _service.CreateRecord(record);
+        return CreatedAtAction(nameof(GetById), new { id = newRecord.Id }, newRecord);
+    }
 
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var record = _service.GetById(id);
-            return record == null ? NotFound() : Ok(record);
-        }
+    [HttpPut("{id}")]
+    public async Task<ActionResult> Update(int id, [FromBody] AttendanceRecord updatedRecord)
+    {
+        if (!await _service.Update(id, updatedRecord))
+            return NotFound(new { message = "Record not found" });
 
-        [HttpPost]
-        
-        public IActionResult Create([FromBody] AttendanceRecord record)
-        {
-            var newRecord = _service.CreateRecord(record);
-            return CreatedAtAction(nameof(GetById), new { id = newRecord.Id }, newRecord);
-        }
+        return NoContent();
+    }
 
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        if (!await _service.Delete(id))
+            return NotFound(new { message = "Record not found" });
 
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] AttendanceRecord updatedRecord)
-        {
-            return _service.Update(id, updatedRecord) ? NoContent() : NotFound();
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            return _service.Delete(id) ? NoContent() : NotFound();
-        }
+        return NoContent();
     }
 }

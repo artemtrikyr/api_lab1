@@ -1,54 +1,59 @@
+using AttendanceJournalApi.Data;
 using AttendanceJournalApi.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace AttendanceJournalApi.Services;
-
-public class AttendanceService
+namespace AttendanceJournalApi.Services
 {
-    private readonly List<AttendanceRecord> _records = new()
+    public class AttendanceService
     {
-        new AttendanceRecord { Id = 1, Group = "CS101", Student = "John Doe", Discipline = "Mathematics", Teacher = "Dr. Smith", LessonDate = DateTime.UtcNow, WasPresent = true },
-        new AttendanceRecord { Id = 2, Group = "CS102", Student = "Jane Smith", Discipline = "Physics", Teacher = "Dr. Brown", LessonDate = DateTime.UtcNow, WasPresent = false }
-    };
+        private readonly ApplicationDbContext _context;
 
-    public List<AttendanceRecord> GetAll() => _records;
+        public AttendanceService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
-    public AttendanceRecord? GetById(int id) => _records.FirstOrDefault(r => r.Id == id);
+        public async Task<List<AttendanceRecord>> GetAll()
+        {
+            return await _context.AttendanceRecords.ToListAsync();
+        }
 
-    public AttendanceRecord CreateRecord(AttendanceRecord newRecord)
-    {
-        newRecord.Id = _records.Count > 0 ? _records.Max(r => r.Id) + 1 : 1;
-        _records.Add(newRecord);
-        Console.WriteLine($"[LOG] Додано запис: ID={newRecord.Id}, Student={newRecord.Student}");
-        return newRecord;
+        public async Task<AttendanceRecord?> GetById(int id)
+        {
+            return await _context.AttendanceRecords.FindAsync(id);
+        }
+
+        public async Task<AttendanceRecord> CreateRecord(AttendanceRecord newRecord)
+        {
+            _context.AttendanceRecords.Add(newRecord);
+            await _context.SaveChangesAsync();
+            return newRecord;
+        }
+
+        public async Task<bool> Update(int id, AttendanceRecord updatedRecord)
+        {
+            var record = await _context.AttendanceRecords.FindAsync(id);
+            if (record == null) return false;
+
+            record.Group = updatedRecord.Group;
+            record.Student = updatedRecord.Student;
+            record.Discipline = updatedRecord.Discipline;
+            record.Teacher = updatedRecord.Teacher;
+            record.LessonDate = updatedRecord.LessonDate;
+            record.WasPresent = updatedRecord.WasPresent;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> Delete(int id)
+        {
+            var record = await _context.AttendanceRecords.FindAsync(id);
+            if (record == null) return false;
+
+            _context.AttendanceRecords.Remove(record);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
-
-
-
-    public bool Update(int id, AttendanceRecord updatedRecord)
-    {
-        var record = _records.FirstOrDefault(r => r.Id == id);
-        if (record == null) return false;
-
-        record.Group = updatedRecord.Group;
-        record.Student = updatedRecord.Student;
-        record.Discipline = updatedRecord.Discipline;
-        record.Teacher = updatedRecord.Teacher;
-        record.LessonDate = updatedRecord.LessonDate;
-        record.WasPresent = updatedRecord.WasPresent;
-
-        Console.WriteLine($"[LOG] Оновлено запис: ID={id}, Student={record.Student}");
-        return true;
-    }
-
-
-    public bool Delete(int id)
-    {
-        var record = _records.FirstOrDefault(r => r.Id == id);
-        if (record == null) return false;
-    
-        _records.Remove(record);
-        Console.WriteLine($"[LOG] Видалено запис: ID={id}");
-        return true;
-    }
-
 }
