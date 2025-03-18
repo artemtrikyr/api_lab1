@@ -1,5 +1,6 @@
 using AttendanceJournalApi.Models;
 using AttendanceJournalApi.Services;
+using AttendanceJournalApi.Middlewares;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AttendanceJournalApi.Controllers;
@@ -16,13 +17,17 @@ public class AttendanceController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<AttendanceRecord>>> GetAll()
+    public async Task<ActionResult<List<AttendanceRecord>>> GetAll(
+        [FromQuery] string? query,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var records = await _service.GetAll();
+        var records = await _service.GetAll(query, page, pageSize);
         return Ok(records);
     }
 
     [HttpGet("{id}")]
+    [UserIdValidationActionFilter]
     public async Task<ActionResult<AttendanceRecord>> GetById(int id)
     {
         var record = await _service.GetById(id);
@@ -36,7 +41,8 @@ public class AttendanceController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = newRecord.Id }, newRecord);
     }
 
-    [HttpPut("{id}")]
+    [HttpPatch("{id}")]
+    [UserIdValidationActionFilter]
     public async Task<ActionResult> Update(int id, [FromBody] AttendanceRecord updatedRecord)
     {
         if (!await _service.Update(id, updatedRecord))
@@ -46,6 +52,7 @@ public class AttendanceController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [UserIdValidationActionFilter]
     public async Task<ActionResult> Delete(int id)
     {
         if (!await _service.Delete(id))

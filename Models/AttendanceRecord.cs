@@ -7,7 +7,15 @@ namespace AttendanceJournalApi.Models
         public string Student { get; set; } = string.Empty;
         public string Discipline { get; set; } = string.Empty;
         public string Teacher { get; set; } = string.Empty;
-        public DateTime LessonDate { get; set; }
+
+        private DateTime _lessonDate;
+        public DateTime LessonDate
+        {
+            get => _lessonDate;
+            set => _lessonDate = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        }
+
         public bool WasPresent { get; set; }
     }
+
 }
